@@ -1742,6 +1742,36 @@ class Airflow(BaseView):
             root=root,
         )
 
+    @expose('/build_info')
+    @login_required
+    @wwwutils.action_logging
+    @provide_session
+    def build_info(self, session=None):
+        dag_id = request.args.get('dag_id')
+        dag = dagbag.get_dag(dag_id)
+        
+        root = request.args.get('root')
+        if root:
+            dag = dag.sub_dag(
+                task_regex=root,
+                include_upstream=True,
+                include_downstream=False)
+        dttm = request.args.get('execution_date')
+        if dttm:
+            dttm = pendulum.parse(dttm)
+        else:
+            dttm = dag.latest_execution_date or timezone.utcnow()
+
+        form = DateTimeForm(data={'execution_date': dttm})
+        return self.render(
+            'airflow/build_info.html',
+            dag=dag,
+            root=root,
+            execution_date=dttm.isoformat(),
+            form=form,
+            title = "my title"
+        )
+
     @expose('/object/task_instances')
     @login_required
     @wwwutils.action_logging
