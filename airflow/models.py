@@ -4827,3 +4827,31 @@ class ImportError(Base):
     timestamp = Column(UtcDateTime)
     filename = Column(String(1024))
     stacktrace = Column(Text)
+
+class Project(Base):
+    id = Column(Integer, primary_key=True)
+    name = Column(String(30))
+
+class Repo(Base):
+    id = Column(Integer, primary_key=True)
+    name = Column(String(30))
+    project_id = Column(Integer, ForeignKey(Project.id))
+
+class Dag(Base):
+    id = Column(Integer, primary_key=True)
+    name = Column(String(30))
+    project_id = Column(Integer, ForeignKey(Project.id))
+
+class Build(Base):
+    id = Column(Integer, primary_key=True)
+    name = Column(String(30))
+    date = Column(UtcDateTime)
+    dag_id = Column(Integer, ForeignKey(Dag.id))
+    status = Column(String(30))
+
+class RepoBuild(Base):
+    id = Column(Integer, primary_key=True)
+    sha = Column(String(40))
+    branch = Column(String(30))
+    repo_id = Column(Integer, ForeignKey(Repo.id))
+    build_id = Column(Integer, ForeignKey(Build.id))
