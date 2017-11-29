@@ -26,14 +26,11 @@ dag = DAG(
     'istio_daily', default_args=default_args, schedule_interval=timedelta(1))
 
 # t1, t2 and t3 are examples of tasks created by instantiating operators
-# generate_workflow_args = BashOperator(
-#     task_id='generate_workflow_args',
-#     bash_command='echo generate_workflow_args',
-#     dag=dag)
-generate_workflow = BashOperator(
-    task_id='generate_workflow',
-    bash_command='echo generate_workflow',
+generate_workflow_args = BashOperator(
+    task_id='generate_workflow_args',
+    bash_command='echo generate_workflow_args',
     dag=dag)
+
 done = BashOperator(
     task_id='done',
     bash_command='echo done',
@@ -42,14 +39,14 @@ to_continue = BashOperator(
     task_id='to_continue',
     bash_command='echo to_continue',
     dag=dag)
-# run_release_qualification_tests = BashOperator(
-#     task_id='run_release_qualification_tests',
-#     bash_command='echo run_release_qualification_tests',
-#     dag=dag)
-# run_cloud_builder = BashOperator(
-#     task_id='run_cloud_builder',
-#     bash_command='echo run_cloud_builder',
-#     dag=dag)
+run_release_qualification_tests = BashOperator(
+    task_id='run_release_qualification_tests',
+    bash_command='echo run_release_qualification_tests',
+    dag=dag)
+run_cloud_builder = BashOperator(
+    task_id='run_cloud_builder',
+    bash_command='echo run_cloud_builder',
+    dag=dag)
 
 github_release = BashOperator(
     task_id='github_release',
@@ -67,14 +64,12 @@ start_release = BashOperator(
     task_id='start_release',
     bash_command='echo start_release',
     dag=dag)
-to_continue = BashOperator(
-    task_id='to_continue',
-    bash_command='echo to_continue',
-    dag=dag)
 
-#run_cloud_builder.set_upstream(generate_workflow_args)
-#run_release_qualification_tests.set_upstream(run_cloud_builder)
-to_continue.set_upstream(generate_workflow)
+
+run_cloud_builder.set_upstream(generate_workflow_args)
+run_release_qualification_tests.set_upstream(run_cloud_builder)
+
+to_continue.set_upstream(run_release_qualification_tests)
 start_release.set_upstream(to_continue)
 push_release.set_upstream(start_release)
 github_release.set_upstream(push_release)
