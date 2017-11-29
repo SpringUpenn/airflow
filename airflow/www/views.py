@@ -1756,10 +1756,19 @@ class Airflow(BaseView):
                 task_regex=root,
                 include_upstream=True,
                 include_downstream=False)
+        dttm = request.args.get('execution_date')
+        if dttm:
+            dttm = pendulum.parse(dttm)
+        else:
+            dttm = dag.latest_execution_date or timezone.utcnow()
+
+        form = DateTimeForm(data={'execution_date': dttm})
         return self.render(
             'airflow/build_info.html',
             dag=dag,
             root=root,
+            execution_date=dttm.isoformat(),
+            form=form,
             title = "my title"
         )
 
