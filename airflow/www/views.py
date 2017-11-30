@@ -1784,11 +1784,10 @@ class Airflow(BaseView):
         final_dict['sha_repo'] = []
         build_id = repo_build_sha_dict_l[0]['build_id']
         for each_dict in repo_build_sha_dict_l:
-            
-            final_dict['date'] = each_dict['date']
-            final_dict['build_name'] = each_dict['build_name']
-            final_dict['overall_task_status'] = 'in progress'
             if build_id == each_dict['build_id']:
+                final_dict['date'] = each_dict['date']
+                final_dict['build_name'] = each_dict['build_name']
+                final_dict['overall_task_status'] = 'in progress'
                 final_dict['sha_repo'].append(str(each_dict['sha_repo']))
             else:
                 final_dict_l.append(final_dict)
@@ -1796,7 +1795,6 @@ class Airflow(BaseView):
                 final_dict['sha_repo'] = [each_dict['sha_repo']]
                 build_id = each_dict['build_id']
         final_dict_l.append(final_dict)
-
 
         return self.render(
             'airflow/build_info.html',
