@@ -1779,27 +1779,24 @@ class Airflow(BaseView):
             repo_build_sha_dict['sha_repo'] = each_tuple[2].name + '--->' + each_tuple[0].sha
             repo_build_sha_dict_l.append(repo_build_sha_dict)
 
-        final_dict_l = []
-        final_dict = {}
-        final_dict['sha_repo'] = []
-        build_id = repo_build_sha_dict_l[0]['build_id']
+        final_dict_l = {}
         for each_dict in repo_build_sha_dict_l:
-            if build_id == each_dict['build_id']:
+            if each_dict['build_id'] in final_dict_l:
+                final_dict_l[each_dict['build_id']]['sha_repo'].append(str(each_dict['sha_repo']))
+                
+            else:
+                final_dict = {}
+                final_dict['sha_repo'] = []
+                final_dict_l[each_dict['build_id']] = final_dict
                 final_dict['date'] = each_dict['date']
                 final_dict['build_name'] = each_dict['build_name']
                 final_dict['overall_task_status'] = 'in progress'
                 final_dict['sha_repo'].append(str(each_dict['sha_repo']))
-            else:
-                final_dict_l.append(final_dict)
-                final_dict = {}
-                final_dict['sha_repo'] = [each_dict['sha_repo']]
-                build_id = each_dict['build_id']
-        final_dict_l.append(final_dict)
 
         return self.render(
             'airflow/build_info.html',
             dag=dag,
-            final_dict_l=final_dict_l,
+            final_dict_l=final_dict_l.values(),
             root=root,
             execution_date=dttm.isoformat(),
             form=form,
