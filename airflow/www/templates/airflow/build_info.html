@@ -67,13 +67,9 @@
       <tr>
         <th>Date: From</th>
         <th>Date: To</th>
-        
         <th>Task Status</th>
-     
         <th>Build name</th>
         <th>Overall Build Status</th>
-        <th>Repository List</th>
-        
         <th>SHA - Repository relationship</th>
       </tr>
       <tr>
@@ -82,7 +78,6 @@
         <td>{{ title }}</td>
         <td><code>{{ dag.default_args }}</code></td> 
         <td>{{ dag.tasks|length }}</td>
-        <td>{{ dag.task_ids }}</td>
         <td>{{ dag.filepath }}</td>
       </tr>
     {% endblock %}
