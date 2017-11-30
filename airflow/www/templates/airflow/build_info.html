@@ -68,14 +68,21 @@
         <th>Date</th>
         <th>Build name</th>
         <th>Overall Build Status</th>
-        <th>Repositories</th>
+        <th>Repositories [Repo ---> SHA]</th>
       </tr>
-      {% for each_build in all_build %}
+      {% for each_build in final_dict_l %}
       <tr>
         <td>{{ each_build.date }}</td>
-        <td>{{ each_build.name }}</td>
-        <td>{{ each_build.name }}</td> 
-        <td>{{ each_build.name }}</td>
+        <td>{{ each_build.build_name }}</td>
+        <td><a href="{{ url_for('airflow.tree', dag_id=dag.dag_id, num_runs=25) }}">{{ each_build.overall_task_status }}</td> 
+        <td>
+          
+          {% for each_sha_repo in each_build.sha_repo %}
+            <p> {{ each_sha_repo }} </p>
+          {% endfor %}
+          
+
+      </td>
       </tr>
       {% endfor %}
     {% endblock %}

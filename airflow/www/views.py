@@ -1764,60 +1764,44 @@ class Airflow(BaseView):
 
         form = DateTimeForm(data={'execution_date': dttm})
 
+        Repo = models.Repo
         RepoBuild = models.RepoBuild
-
-        all_records = session.query(RepoBuild).all()
-        
-        all_build_info_records = []
         Build = models.Build
 
-        all_build = session.query(Build).all()
+        repo_build_sha_dict_l = []
+        all_sha_repo_records_tuple = session.query(RepoBuild, Build, Repo).filter(RepoBuild.build_id == Build.id).filter(Repo.id == RepoBuild.repo_id).all()
+        for each_tuple in all_sha_repo_records_tuple:
+            repo_build_sha_dict = {}
+            repo_build_sha_dict['date'] = each_tuple[1].date
+            repo_build_sha_dict['build_name']= each_tuple[1].name
+            repo_build_sha_dict['build_id']= each_tuple[1].id
+            repo_build_sha_dict['overall_task_status'] = 'in progress'
+            repo_build_sha_dict['sha_repo'] = each_tuple[2].name + '--->' + each_tuple[0].sha
+            repo_build_sha_dict_l.append(repo_build_sha_dict)
 
-        TI = models.TaskInstance
+        final_dict_l = []
+        final_dict = {}
+        final_dict['sha_repo'] = []
+        build_id = repo_build_sha_dict_l[0]['build_id']
+        for each_dict in repo_build_sha_dict_l:
+            
+            final_dict['date'] = each_dict['date']
+            final_dict['build_name'] = each_dict['build_name']
+            final_dict['overall_task_status'] = 'in progress'
+            if build_id == each_dict['build_id']:
+                final_dict['sha_repo'].append(str(each_dict['sha_repo']))
+            else:
+                final_dict_l.append(final_dict)
+                final_dict = {}
+                final_dict['sha_repo'] = [each_dict['sha_repo']]
+                build_id = each_dict['build_id']
+        final_dict_l.append(final_dict)
 
-        all_task_instances = session.query(TI).all()
-
-        # RunningDagRun = (
-        #     session.query(DagRun.dag_id, DagRun.execution_date)
-        #         .join(Dag, Dag.dag_id == DagRun.dag_id)
-        #         .filter(DagRun.state == State.RUNNING)
-        #         .filter(Dag.is_active == True)
-        #         .subquery('running_dag_run')
-        # )
-
-        # # Select all task_instances from active dag_runs.
-        # # If no dag_run is active, return task instances from most recent dag_run.
-        # LastTI = (
-        #     session.query(TI.dag_id.label('dag_id'), TI.state.label('state'))
-        #         .join(LastDagRun, and_(
-        #         LastDagRun.c.dag_id == TI.dag_id,
-        #         LastDagRun.c.execution_date == TI.execution_date))
-        # )
-        # RunningTI = (
-        #     session.query(TI.dag_id.label('dag_id'), TI.state.label('state'))
-        #         .join(RunningDagRun, and_(
-        #         RunningDagRun.c.dag_id == TI.dag_id,
-        #         RunningDagRun.c.execution_date == TI.execution_date))
-        # )
-
-        # UnionTI = union_all(LastTI, RunningTI).alias('union_ti')
-        # qry = (
-        #     session.query(UnionTI.c.dag_id, UnionTI.c.state, sqla.func.count())
-        #         .group_by(UnionTI.c.dag_id, UnionTI.c.state)
-        # )
-
-        # data = {}
-        # for dag_id, state, count in qry:
-        #     if dag_id not in data:
-        #         data[dag_id] = {}
-        #     data[dag_id][state] = count
-        # session.commit()
 
         return self.render(
             'airflow/build_info.html',
             dag=dag,
-            all_records=all_records,
-            all_build=all_build,
+            final_dict_l=final_dict_l,
             root=root,
             execution_date=dttm.isoformat(),
             form=form,
