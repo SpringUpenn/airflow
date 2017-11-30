@@ -1763,9 +1763,61 @@ class Airflow(BaseView):
             dttm = dag.latest_execution_date or timezone.utcnow()
 
         form = DateTimeForm(data={'execution_date': dttm})
+
+        RepoBuild = models.RepoBuild
+
+        all_records = session.query(RepoBuild).all()
+        
+        all_build_info_records = []
+        Build = models.Build
+
+        all_build = session.query(Build).all()
+
+        TI = models.TaskInstance
+
+        all_task_instances = session.query(TI).all()
+
+        # RunningDagRun = (
+        #     session.query(DagRun.dag_id, DagRun.execution_date)
+        #         .join(Dag, Dag.dag_id == DagRun.dag_id)
+        #         .filter(DagRun.state == State.RUNNING)
+        #         .filter(Dag.is_active == True)
+        #         .subquery('running_dag_run')
+        # )
+
+        # # Select all task_instances from active dag_runs.
+        # # If no dag_run is active, return task instances from most recent dag_run.
+        # LastTI = (
+        #     session.query(TI.dag_id.label('dag_id'), TI.state.label('state'))
+        #         .join(LastDagRun, and_(
+        #         LastDagRun.c.dag_id == TI.dag_id,
+        #         LastDagRun.c.execution_date == TI.execution_date))
+        # )
+        # RunningTI = (
+        #     session.query(TI.dag_id.label('dag_id'), TI.state.label('state'))
+        #         .join(RunningDagRun, and_(
+        #         RunningDagRun.c.dag_id == TI.dag_id,
+        #         RunningDagRun.c.execution_date == TI.execution_date))
+        # )
+
+        # UnionTI = union_all(LastTI, RunningTI).alias('union_ti')
+        # qry = (
+        #     session.query(UnionTI.c.dag_id, UnionTI.c.state, sqla.func.count())
+        #         .group_by(UnionTI.c.dag_id, UnionTI.c.state)
+        # )
+
+        # data = {}
+        # for dag_id, state, count in qry:
+        #     if dag_id not in data:
+        #         data[dag_id] = {}
+        #     data[dag_id][state] = count
+        # session.commit()
+
         return self.render(
             'airflow/build_info.html',
             dag=dag,
+            all_records=all_records,
+            all_build=all_build,
             root=root,
             execution_date=dttm.isoformat(),
             form=form,

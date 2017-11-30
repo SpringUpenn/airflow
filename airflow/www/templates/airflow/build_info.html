@@ -65,21 +65,19 @@
     {% block model_list_table %}
     <table class="table table-striped table-bordered">
       <tr>
-        <th>Date: From</th>
-        <th>Date: To</th>
-        <th>Task Status</th>
+        <th>Date</th>
         <th>Build name</th>
         <th>Overall Build Status</th>
-        <th>SHA - Repository relationship</th>
+        <th>Repositories</th>
       </tr>
+      {% for each_build in all_build %}
       <tr>
-        <td>{{ dag.schedule_interval }}</td>  
-        <td>{{ dag.active_runs | length }} / {{ dag.max_active_runs }}</td>
-        <td>{{ title }}</td>
-        <td><code>{{ dag.default_args }}</code></td> 
-        <td>{{ dag.tasks|length }}</td>
-        <td>{{ dag.filepath }}</td>
+        <td>{{ each_build.date }}</td>
+        <td>{{ each_build.name }}</td>
+        <td>{{ each_build.name }}</td> 
+        <td>{{ each_build.name }}</td>
       </tr>
+      {% endfor %}
     {% endblock %}
 {% endblock %}
 
