@@ -4829,27 +4829,31 @@ class ImportError(Base):
     stacktrace = Column(Text)
 
 class Project(Base):
+    __tablename__ = "project"
     id = Column(Integer, primary_key=True)
     name = Column(String(30))
 
 class Repo(Base):
+    __tablename__ = "repo"
     id = Column(Integer, primary_key=True)
     name = Column(String(30))
     project_id = Column(Integer, ForeignKey(Project.id))
 
-class Dag(Base):
-    id = Column(Integer, primary_key=True)
-    name = Column(String(30))
-    project_id = Column(Integer, ForeignKey(Project.id))
+class IstioDag(Base):
+    __tablename__ = "istio_dag"
+    id = Column(Integer, ForeignKey(DagModel.dag_id), primary_key=True)
+    project_id = Column(Integer, ForeignKey(Project.id), primary_key=True)
 
 class Build(Base):
+    __tablename__ = "build"
     id = Column(Integer, primary_key=True)
     name = Column(String(30))
     date = Column(UtcDateTime)
-    dag_id = Column(Integer, ForeignKey(Dag.id))
+    dag_id = Column(Integer, ForeignKey(IstioDag.id))
     status = Column(String(30))
 
 class RepoBuild(Base):
+    __tablename__ = "repo_build"
     id = Column(Integer, primary_key=True)
     sha = Column(String(40))
     branch = Column(String(30))
