@@ -4833,16 +4833,25 @@ class Project(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String(30))
 
+    def __repr__(self):
+        return "<Project(name='%s')>" % (self.name)
+
 class Repo(Base):
     __tablename__ = "repo"
     id = Column(Integer, primary_key=True)
     name = Column(String(30))
     project_id = Column(Integer, ForeignKey(Project.id))
 
+    def __repr__(self):
+        return "<Repo(name='%s'), (project_id='%d')>" % (self.name, self.project_id)
+
 class IstioDag(Base):
     __tablename__ = "istio_dag"
     id = Column(Integer, ForeignKey(DagModel.dag_id), primary_key=True)
     project_id = Column(Integer, ForeignKey(Project.id), primary_key=True)
+
+    def __repr__(self):
+        return "<IstioDag(id='%s')>" % (self.id)
 
 class Build(Base):
     __tablename__ = "build"

@@ -254,6 +254,45 @@ def upgrade():
             sa.Column('dag_id', sa.String(length=250), nullable=False),
             sa.PrimaryKeyConstraint('id')
         )
+    if 'project' not in tables:
+        op.create_table('project',
+            sa.Column('id', sa.Integer, primary_key=True),
+            sa.Column('name', sa.String())
+        )
+    if 'repo' not in tables:
+        op.create_table('repo',
+            sa.Column('id', sa.Integer, primary_key=True),
+            sa.Column('name', sa.String()),
+            sa.Column('project_id', sa.Integer),
+            sa.ForeignKeyConstraint(['project_id'],['project.id'],)
+        )
+    if 'istio_dag' not in tables:
+        op.create_table('istio_dag',
+            sa.Column('id', sa.Integer, primary_key=True),
+            sa.Column('project_id', sa.Integer, primary_key=True),
+            sa.ForeignKeyConstraint(['id'],['dag_model.dag_id'],),
+            sa.ForeignKeyConstraint(['project_id'],['project.id'],)
+        )
+    if 'build' not in tables:
+        op.create_table('build',
+            sa.Column('id', sa.Integer, primary_key=True),
+            sa.Column('name', sa.String()),
+            sa.Column('date', sa.DateTime()),
+            sa.Column('dag_id', sa.Integer),
+            sa.Column('status', sa.String()),
+            sa.ForeignKeyConstraint(['dag_id'], ['istio_dag.id'],)
+        )
+
+    if 'repo_build' not in tables:
+        op.create_table('repo_build',
+            sa.Column('id', sa.Integer, primary_key=True),
+            sa.Column('sha', sa.String()),
+            sa.Column('branch', sa.String()),
+            sa.Column('repo_id', sa.Integer),
+            sa.Column('build_id', sa.Integer),
+            sa.ForeignKeyConstraint(['repo_id'], ['repo.id'],),
+            sa.ForeignKeyConstraint(['build_id'], ['build.id'],)
+        )
 
 
 def downgrade():
@@ -276,3 +315,8 @@ def downgrade():
     op.drop_table('dag')
     op.drop_table('connection')
     op.drop_table('xcom')
+    op.drop_table('project')
+    op.drop_table('repo')
+    op.drop_table('istio_dag')
+    op.drop_table('build')
+    op.drop_table('repo_build')
