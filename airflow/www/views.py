@@ -1787,6 +1787,8 @@ class Airflow(BaseView):
         else:
             fromDate = timezone.utcnow().strftime('%Y-%m-%dT%H:%M')
         final_dict_l = {}
+        start_date = ''
+        end_date = '' 
         if request.args.get('today_build_info'):
             print 'today_build_info'
             print request.args.get('today_build_info')
@@ -1798,9 +1800,8 @@ class Airflow(BaseView):
             Repo = models.Repo
             RepoBuild = models.RepoBuild
             Build = models.Build
-
             repo_build_sha_dict_l = []
-            all_sha_repo_records_tuple = session.query(RepoBuild, Build, Repo).filter(RepoBuild.build_id == Build.id).filter(Repo.id == RepoBuild.repo_id).filter(Build.date == utc_dt).filter(Build.status.in_(status_query)).all()
+            all_sha_repo_records_tuple = session.query(RepoBuild, Build, Repo).filter(RepoBuild.build_id == Build.id).filter(Repo.id == RepoBuild.repo_id).filter(Build.date >= utc_dt).filter(Build.status.in_(status_query)).all()
             for each_tuple in all_sha_repo_records_tuple:
                 repo_build_sha_dict = {}
                 repo_build_sha_dict['date'] = each_tuple[1].date
@@ -1823,6 +1824,8 @@ class Airflow(BaseView):
                     final_dict['build_name'] = each_dict['build_name']
                     final_dict['overall_task_status'] = 'in progress'
                     final_dict['sha_repo'].append(str(each_dict['sha_repo']))
+            start_date = utc_dt
+            end_date = utc_dt
         elif request.args.get('yesterday_build_info'):
             from tzlocal import get_localzone
             execution_date = timezone.utcnow().strftime('%Y-%m-%d %H:%M:%S')
@@ -1841,7 +1844,7 @@ class Airflow(BaseView):
             Build = models.Build
 
             repo_build_sha_dict_l = []
-            all_sha_repo_records_tuple = session.query(RepoBuild, Build, Repo).filter(RepoBuild.build_id == Build.id).filter(Repo.id == RepoBuild.repo_id).filter(Build.date == utc_dt).filter(Build.status.in_(status_query)).all()
+            all_sha_repo_records_tuple = session.query(RepoBuild, Build, Repo).filter(RepoBuild.build_id == Build.id).filter(Repo.id == RepoBuild.repo_id).filter(Build.date >= utc_dt).filter(Build.status.in_(status_query)).all()
             for each_tuple in all_sha_repo_records_tuple:
                 repo_build_sha_dict = {}
                 repo_build_sha_dict['date'] = each_tuple[1].date
@@ -1864,6 +1867,8 @@ class Airflow(BaseView):
                     final_dict['build_name'] = each_dict['build_name']
                     final_dict['overall_task_status'] = 'in progress'
                     final_dict['sha_repo'].append(str(each_dict['sha_repo']))
+            start_date = utc_dt
+            end_date = tz.localize(naive_dt, is_dst=None).astimezone(pytz.utc)
         elif request.args.get('last_week_build_info'):
             from tzlocal import get_localzone
             execution_date = timezone.utcnow().strftime('%Y-%m-%d %H:%M:%S')
@@ -1905,6 +1910,8 @@ class Airflow(BaseView):
                     final_dict['build_name'] = each_dict['build_name']
                     final_dict['overall_task_status'] = 'in progress'
                     final_dict['sha_repo'].append(str(each_dict['sha_repo']))
+            start_date = utc_dt
+            end_date = tz.localize(naive_dt, is_dst=None).astimezone(pytz.utc)
         elif request.args.get('last_month_build_info'):
             from tzlocal import get_localzone
             execution_date = timezone.utcnow().strftime('%Y-%m-%d %H:%M:%S')
@@ -1946,6 +1953,8 @@ class Airflow(BaseView):
                     final_dict['build_name'] = each_dict['build_name']
                     final_dict['overall_task_status'] = 'in progress'
                     final_dict['sha_repo'].append(str(each_dict['sha_repo']))
+            start_date = utc_dt
+            end_date = tz.localize(naive_dt, is_dst=None).astimezone(pytz.utc)
         else:
             naive_dt = datetime.datetime.strptime(execution_date,'%Y-%m-%d %H:%M:%S')
             naive_dt_from = datetime.datetime.strptime(fromDate,'%Y-%m-%dT%H:%M')
@@ -1984,6 +1993,8 @@ class Airflow(BaseView):
                     final_dict['build_name'] = each_dict['build_name']
                     final_dict['overall_task_status'] = 'in progress'
                     final_dict['sha_repo'].append(str(each_dict['sha_repo']))
+            start_date = utc_dt_from
+            end_date = utc_dt_to
         
         return self.render(
             'airflow/build_info.html',
@@ -1992,7 +2003,9 @@ class Airflow(BaseView):
             root=root,
             execution_date=dttm.isoformat(),
             form=form,
-            title = "my title"
+            title = "my title",
+            start_date=start_date,
+            end_date = end_date
         )
 
     @expose('/object/task_instances')
