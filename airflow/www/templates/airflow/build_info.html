@@ -26,40 +26,47 @@
 
 {% block body %}
 {{ super() }}
-
+    <form method="get">
     <div>
       Quick Links: 
-      <a href="{{ url_for("airflow.build_info", dag_id=dag.dag_id, days=30, root=root) }}">
-          Today </a>| <a href="{{ url_for("airflow.build_info", dag_id=dag.dag_id, days=30, root=root) }}">
+      <input type="submit" name="today_build_info" class="btn btn-link" value="Today">
+      <input type="submit" name="yesterday_build_info" class="btn btn-link" value="Yesterday">
+      <input type="submit" name="last_week_build_info"  class="btn btn-link" value="Last Week">
+      <input type="submit" name="last_month_build_info" class="btn btn-link" value="Last Month">
+      <!-- <a href="{{ url_for("airflow.build_info", dag_id=dag.dag_id, days=30, root=root) }}">
+          Today </a>| <a href="{{ url_for("airflow.build_info", dag_id=dag.dag_id, days=30, root=root) }}" name="yesterday_build_info">
           Yesterday
-        </a>| <a href="{{ url_for("airflow.build_info", dag_id=dag.dag_id, days=30, root=root) }}">
+        </a>| <a href="{{ url_for("airflow.build_info", dag_id=dag.dag_id, days=30, root=root) }}" name="last_week_build_info">
             Last Week
-        </a>|<a href="{{ url_for("airflow.build_info", dag_id=dag.dag_id, days=30, root=root) }}">
+        </a>|<a href="{{ url_for("airflow.build_info", dag_id=dag.dag_id, days=30, root=root) }}" name="last_month_build_info">
             Last Month              
-        </a>
+        </a> -->
         <p></p>
         <p></p>
-      <form method="get">
+      
         <div class="form-inline">
           From:<input type="hidden" value="{{ dag.dag_id }}" name="dag_id">
-          {{ form.execution_date(class_="form-control") | safe }}
+          <input type="datetime-local" name="fromDate">
+          <!-- {{ form.execution_date(class_="form-control") | safe }} -->
           To:<input type="hidden" value="{{ dag.dag_id }}" name="dag_id">
-          {{ form.execution_date(class_="form-control") | safe }}
-          <div style="margin-left: 44.9em; display:inline;">
+          <input type="datetime-local" name="toDate">
+          <!-- {{ form.execution_date(class_="form-control") | safe }} -->
+          <div style="margin-left: 35.9em; display:inline;">
             Build Status: 
-            <input id="success_id" type="checkbox" value="1">
+            <input id="success_id" type="checkbox" value="success" name="success_status" checked="">
             <label>Success </label>
-            <input id="failure_id" type="checkbox" value="1">
+            <input id="failure_id" type="checkbox" value="failure" name="failure_status" checked="">
             <label >Failure</label>
-            <input id="in_progress_id" type="checkbox" value="1">
+            <input id="in_progress_id" type="checkbox" value="in_progress" name="in_progress_status" checked="">
             <label >In Progress</label>
             <input type="submit" value="Go" class="btn btn-default" action="" method="get">
             <input type="hidden" name="root" value="{{ root if root else '' }}">
             <input name="_csrf_token" type="hidden" value="{{ csrf_token() }}">
             </div>
         </div>
-      </form>
+      
   </div>
+  </form>
     <p></p>
     <p></p>
     {% block model_list_table %}

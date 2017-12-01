@@ -1747,6 +1747,10 @@ class Airflow(BaseView):
     @wwwutils.action_logging
     @provide_session
     def build_info(self, session=None):
+        build_status = [request.args.get('success_status'), request.args.get('failure_status'), request.args.get('in_progress_status')]
+        status_query = [s for s in build_status if s is not None]
+        if not status_query:
+            status_query = ["success", "failure", "in_progress"]
         dag_id = request.args.get('dag_id')
         dag = dagbag.get_dag(dag_id)
         
@@ -1763,36 +1767,224 @@ class Airflow(BaseView):
             dttm = dag.latest_execution_date or timezone.utcnow()
 
         form = DateTimeForm(data={'execution_date': dttm})
+        # print "request.args.get('fromDate')"
+        # print request.args.get('fromDate')
+        fromDate = request.args.get('fromDate')
+        toDate = request.args.get('toDate')
+        import datetime
+        if request.args.get('execution_date'):
+            execution_date = request.args.get('execution_date')
+        else:
+            execution_date = timezone.utcnow().strftime('%Y-%m-%d %H:%M:%S')
 
-        Repo = models.Repo
-        RepoBuild = models.RepoBuild
-        Build = models.Build
+        if request.args.get('toDate'):
+            toDate = request.args.get('toDate')
+        else:
+            toDate = timezone.utcnow().strftime('%Y-%m-%dT%H:%M')
 
-        repo_build_sha_dict_l = []
-        all_sha_repo_records_tuple = session.query(RepoBuild, Build, Repo).filter(RepoBuild.build_id == Build.id).filter(Repo.id == RepoBuild.repo_id).all()
-        for each_tuple in all_sha_repo_records_tuple:
-            repo_build_sha_dict = {}
-            repo_build_sha_dict['date'] = each_tuple[1].date
-            repo_build_sha_dict['build_name']= each_tuple[1].name
-            repo_build_sha_dict['build_id']= each_tuple[1].id
-            repo_build_sha_dict['overall_task_status'] = 'in progress'
-            repo_build_sha_dict['sha_repo'] = each_tuple[2].name + '--->' + each_tuple[0].sha
-            repo_build_sha_dict_l.append(repo_build_sha_dict)
-
+        if request.args.get('fromDate'):
+            fromDate = request.args.get('fromDate')
+        else:
+            fromDate = timezone.utcnow().strftime('%Y-%m-%dT%H:%M')
         final_dict_l = {}
-        for each_dict in repo_build_sha_dict_l:
-            if each_dict['build_id'] in final_dict_l:
-                final_dict_l[each_dict['build_id']]['sha_repo'].append(str(each_dict['sha_repo']))
-                
-            else:
-                final_dict = {}
-                final_dict['sha_repo'] = []
-                final_dict_l[each_dict['build_id']] = final_dict
-                final_dict['date'] = each_dict['date']
-                final_dict['build_name'] = each_dict['build_name']
-                final_dict['overall_task_status'] = 'in progress'
-                final_dict['sha_repo'].append(str(each_dict['sha_repo']))
+        if request.args.get('today_build_info'):
+            print 'today_build_info'
+            print request.args.get('today_build_info')
+            execution_date = timezone.utcnow().strftime('%Y-%m-%d %H:%M:%S')
+            naive_dt = datetime.datetime.strptime(execution_date,'%Y-%m-%d %H:%M:%S')
+            import pytz
+            tz = pytz.timezone('US/Pacific')
+            utc_dt = tz.localize(naive_dt, is_dst=None).astimezone(pytz.utc)
+            Repo = models.Repo
+            RepoBuild = models.RepoBuild
+            Build = models.Build
 
+            repo_build_sha_dict_l = []
+            all_sha_repo_records_tuple = session.query(RepoBuild, Build, Repo).filter(RepoBuild.build_id == Build.id).filter(Repo.id == RepoBuild.repo_id).filter(Build.date == utc_dt).filter(Build.status.in_(status_query)).all()
+            for each_tuple in all_sha_repo_records_tuple:
+                repo_build_sha_dict = {}
+                repo_build_sha_dict['date'] = each_tuple[1].date
+                repo_build_sha_dict['build_name']= each_tuple[1].name
+                repo_build_sha_dict['build_id']= each_tuple[1].id
+                repo_build_sha_dict['overall_task_status'] = 'in progress'
+                repo_build_sha_dict['sha_repo'] = each_tuple[2].name + '--->' + each_tuple[0].sha
+                repo_build_sha_dict_l.append(repo_build_sha_dict)
+
+            final_dict_l = {}
+            for each_dict in repo_build_sha_dict_l:
+                if each_dict['build_id'] in final_dict_l:
+                    final_dict_l[each_dict['build_id']]['sha_repo'].append(str(each_dict['sha_repo']))
+                    
+                else:
+                    final_dict = {}
+                    final_dict['sha_repo'] = []
+                    final_dict_l[each_dict['build_id']] = final_dict
+                    final_dict['date'] = each_dict['date']
+                    final_dict['build_name'] = each_dict['build_name']
+                    final_dict['overall_task_status'] = 'in progress'
+                    final_dict['sha_repo'].append(str(each_dict['sha_repo']))
+        elif request.args.get('yesterday_build_info'):
+            from tzlocal import get_localzone
+            execution_date = timezone.utcnow().strftime('%Y-%m-%d %H:%M:%S')
+            naive_dt = datetime.datetime.strptime(execution_date,'%Y-%m-%d %H:%M:%S')
+            DAY = datetime.timedelta(1)
+            local_tz = get_localzone()   # get local timezone
+            now = datetime.datetime.now(local_tz) # get timezone-aware datetime object
+            day_ago = local_tz.normalize(now - DAY) # exactly 24 hours ago, time may differ
+            naive = now.replace(tzinfo=None) - DAY # same time
+            yesterday = local_tz.localize(naive, is_dst=None)
+            import pytz
+            tz = pytz.timezone('US/Pacific')
+            utc_dt = yesterday.astimezone(pytz.utc)
+            Repo = models.Repo
+            RepoBuild = models.RepoBuild
+            Build = models.Build
+
+            repo_build_sha_dict_l = []
+            all_sha_repo_records_tuple = session.query(RepoBuild, Build, Repo).filter(RepoBuild.build_id == Build.id).filter(Repo.id == RepoBuild.repo_id).filter(Build.date == utc_dt).filter(Build.status.in_(status_query)).all()
+            for each_tuple in all_sha_repo_records_tuple:
+                repo_build_sha_dict = {}
+                repo_build_sha_dict['date'] = each_tuple[1].date
+                repo_build_sha_dict['build_name']= each_tuple[1].name
+                repo_build_sha_dict['build_id']= each_tuple[1].id
+                repo_build_sha_dict['overall_task_status'] = 'in progress'
+                repo_build_sha_dict['sha_repo'] = each_tuple[2].name + '--->' + each_tuple[0].sha
+                repo_build_sha_dict_l.append(repo_build_sha_dict)
+
+            final_dict_l = {}
+            for each_dict in repo_build_sha_dict_l:
+                if each_dict['build_id'] in final_dict_l:
+                    final_dict_l[each_dict['build_id']]['sha_repo'].append(str(each_dict['sha_repo']))
+                    
+                else:
+                    final_dict = {}
+                    final_dict['sha_repo'] = []
+                    final_dict_l[each_dict['build_id']] = final_dict
+                    final_dict['date'] = each_dict['date']
+                    final_dict['build_name'] = each_dict['build_name']
+                    final_dict['overall_task_status'] = 'in progress'
+                    final_dict['sha_repo'].append(str(each_dict['sha_repo']))
+        elif request.args.get('last_week_build_info'):
+            from tzlocal import get_localzone
+            execution_date = timezone.utcnow().strftime('%Y-%m-%d %H:%M:%S')
+            naive_dt = datetime.datetime.strptime(execution_date,'%Y-%m-%d %H:%M:%S')
+            DAY = datetime.timedelta(7)
+            local_tz = get_localzone()   # get local timezone
+            now = datetime.datetime.now(local_tz) # get timezone-aware datetime object
+            day_ago = local_tz.normalize(now - DAY) # exactly 24 hours ago, time may differ
+            naive = now.replace(tzinfo=None) - DAY # same time
+            last_week = local_tz.localize(naive, is_dst=None)
+            import pytz
+            tz = pytz.timezone('US/Pacific')
+            utc_dt = last_week.astimezone(pytz.utc)
+            Repo = models.Repo
+            RepoBuild = models.RepoBuild
+            Build = models.Build
+
+            repo_build_sha_dict_l = []
+            all_sha_repo_records_tuple = session.query(RepoBuild, Build, Repo).filter(RepoBuild.build_id == Build.id).filter(Repo.id == RepoBuild.repo_id).filter(Build.date >= utc_dt).filter(Build.status.in_(status_query)).all()
+            for each_tuple in all_sha_repo_records_tuple:
+                repo_build_sha_dict = {}
+                repo_build_sha_dict['date'] = each_tuple[1].date
+                repo_build_sha_dict['build_name']= each_tuple[1].name
+                repo_build_sha_dict['build_id']= each_tuple[1].id
+                repo_build_sha_dict['overall_task_status'] = 'in progress'
+                repo_build_sha_dict['sha_repo'] = each_tuple[2].name + '--->' + each_tuple[0].sha
+                repo_build_sha_dict_l.append(repo_build_sha_dict)
+
+            final_dict_l = {}
+            for each_dict in repo_build_sha_dict_l:
+                if each_dict['build_id'] in final_dict_l:
+                    final_dict_l[each_dict['build_id']]['sha_repo'].append(str(each_dict['sha_repo']))
+                    
+                else:
+                    final_dict = {}
+                    final_dict['sha_repo'] = []
+                    final_dict_l[each_dict['build_id']] = final_dict
+                    final_dict['date'] = each_dict['date']
+                    final_dict['build_name'] = each_dict['build_name']
+                    final_dict['overall_task_status'] = 'in progress'
+                    final_dict['sha_repo'].append(str(each_dict['sha_repo']))
+        elif request.args.get('last_month_build_info'):
+            from tzlocal import get_localzone
+            execution_date = timezone.utcnow().strftime('%Y-%m-%d %H:%M:%S')
+            naive_dt = datetime.datetime.strptime(execution_date,'%Y-%m-%d %H:%M:%S')
+            DAY = datetime.timedelta(45)
+            local_tz = get_localzone()   # get local timezone
+            now = datetime.datetime.now(local_tz) # get timezone-aware datetime object
+            day_ago = local_tz.normalize(now - DAY) # exactly 24 hours ago, time may differ
+            naive = now.replace(tzinfo=None) - DAY # same time
+            last_month = local_tz.localize(naive, is_dst=None)
+            import pytz
+            tz = pytz.timezone('US/Pacific')
+            utc_dt = last_month.astimezone(pytz.utc)
+            Repo = models.Repo
+            RepoBuild = models.RepoBuild
+            Build = models.Build
+
+            repo_build_sha_dict_l = []
+            all_sha_repo_records_tuple = session.query(RepoBuild, Build, Repo).filter(RepoBuild.build_id == Build.id).filter(Repo.id == RepoBuild.repo_id).filter(Build.date >= utc_dt).filter(Build.status.in_(status_query)).all()
+            for each_tuple in all_sha_repo_records_tuple:
+                repo_build_sha_dict = {}
+                repo_build_sha_dict['date'] = each_tuple[1].date
+                repo_build_sha_dict['build_name']= each_tuple[1].name
+                repo_build_sha_dict['build_id']= each_tuple[1].id
+                repo_build_sha_dict['overall_task_status'] = 'in progress'
+                repo_build_sha_dict['sha_repo'] = each_tuple[2].name + '--->' + each_tuple[0].sha
+                repo_build_sha_dict_l.append(repo_build_sha_dict)
+
+            final_dict_l = {}
+            for each_dict in repo_build_sha_dict_l:
+                if each_dict['build_id'] in final_dict_l:
+                    final_dict_l[each_dict['build_id']]['sha_repo'].append(str(each_dict['sha_repo']))
+                    
+                else:
+                    final_dict = {}
+                    final_dict['sha_repo'] = []
+                    final_dict_l[each_dict['build_id']] = final_dict
+                    final_dict['date'] = each_dict['date']
+                    final_dict['build_name'] = each_dict['build_name']
+                    final_dict['overall_task_status'] = 'in progress'
+                    final_dict['sha_repo'].append(str(each_dict['sha_repo']))
+        else:
+            naive_dt = datetime.datetime.strptime(execution_date,'%Y-%m-%d %H:%M:%S')
+            naive_dt_from = datetime.datetime.strptime(fromDate,'%Y-%m-%dT%H:%M')
+            naive_dt_to = datetime.datetime.strptime(toDate,'%Y-%m-%dT%H:%M')
+
+            import pytz
+            tz = pytz.timezone('US/Pacific')
+            utc_dt = tz.localize(naive_dt, is_dst=None).astimezone(pytz.utc)
+            utc_dt_from = tz.localize(naive_dt_from, is_dst=None).astimezone(pytz.utc)
+            utc_dt_to = tz.localize(naive_dt_to, is_dst=None).astimezone(pytz.utc)
+
+            Repo = models.Repo
+            RepoBuild = models.RepoBuild
+            Build = models.Build
+
+            repo_build_sha_dict_l = []
+            all_sha_repo_records_tuple = session.query(RepoBuild, Build, Repo).filter(RepoBuild.build_id == Build.id).filter(Repo.id == RepoBuild.repo_id).filter(Build.date >= utc_dt_from).filter(Build.date <= utc_dt_to).filter(Build.status.in_(status_query)).all()
+            for each_tuple in all_sha_repo_records_tuple:
+                repo_build_sha_dict = {}
+                repo_build_sha_dict['date'] = each_tuple[1].date
+                repo_build_sha_dict['build_name']= each_tuple[1].name
+                repo_build_sha_dict['build_id']= each_tuple[1].id
+                repo_build_sha_dict['overall_task_status'] = 'in progress'
+                repo_build_sha_dict['sha_repo'] = each_tuple[2].name + '--->' + each_tuple[0].sha
+                repo_build_sha_dict_l.append(repo_build_sha_dict)
+
+            for each_dict in repo_build_sha_dict_l:
+                if each_dict['build_id'] in final_dict_l:
+                    final_dict_l[each_dict['build_id']]['sha_repo'].append(str(each_dict['sha_repo']))
+                    
+                else:
+                    final_dict = {}
+                    final_dict['sha_repo'] = []
+                    final_dict_l[each_dict['build_id']] = final_dict
+                    final_dict['date'] = each_dict['date']
+                    final_dict['build_name'] = each_dict['build_name']
+                    final_dict['overall_task_status'] = 'in progress'
+                    final_dict['sha_repo'].append(str(each_dict['sha_repo']))
+        
         return self.render(
             'airflow/build_info.html',
             dag=dag,
